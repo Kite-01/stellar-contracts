@@ -1,0 +1,7 @@
+/target
+.env
+.soroban
+.stellar
+test_snapshots/
+deployments/
+.DS_Store

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  STELLAR_CLI_VERSION: 30.0.1
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - name: Install the stellar CLI
+        run: |
+          sudo apt-get install -y libdbus-1-dev libudev-dev pkg-config
+          stellar --version | grep -q "$STELLAR_CLI_VERSION" || cargo install --locked stellar-cli --version "$STELLAR_CLI_VERSION"
+      - run: ./sh_scripts/lint.sh
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - run: ./sh_scripts/test.sh unit
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - name: Install the stellar CLI
+        run: |
+          sudo apt-get install -y libdbus-1-dev libudev-dev pkg-config
+          stellar --version | grep -q "$STELLAR_CLI_VERSION" || cargo install --locked stellar-cli --version "$STELLAR_CLI_VERSION"
+      - run: ./sh_scripts/test.sh integration
+      - name: Wasm hashes
+        run: ./sh_scripts/build.sh | tail -3 >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm
+          path: |
+            target/wasm32v1-none/release/kite.wasm
+            target/wasm32v1-none/release/factory.wasm
+          if-no-files-found: error
