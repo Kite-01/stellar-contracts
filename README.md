@@ -2,7 +2,7 @@
 
 The Stellar (Soroban) smart contracts behind [Kite](https://github.com/Kite-01/server), an open-source crypto payment processor. Each payment gets its own contract, at an address known before anyone pays. The contract receives the customer's tokens, swaps them through Soroswap if needed, pays fees and settles to the merchant, or refunds the customer.
 
-They do on Stellar what [Kite-01/contracts](https://github.com/Kite-01/contracts) does on EVM and [Kite-01/near-contracts](https://github.com/Kite-01/near-contracts) does on NEAR. Written in Rust with soroban-sdk 29.0.1. Testnet only for now.
+Written in Rust with soroban-sdk 29.0.1.
 
 ## How it works
 
@@ -43,18 +43,18 @@ Soroban calls are synchronous and atomic: a settlement happens in full or not at
 
 ### `factory`
 
-| Method                                                                         | Who                           | What it does                                                                                                                        |
-| ------------------------------------------------------------------------------ | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `__constructor(admin, operator: Option, implementation)`                       | once                          | Sets the admin, an optional first operator and the `kite` Wasm hash.                                                                |
-| `predict_address(transfer)`                                                    | view                          | Validates the transfer and returns its deposit address. Fails for an implementation the factory never accepted.                     |
-| `admin()`, `is_operator(operator)`, `implementation()`, `is_implementation(h)` | view                          | Roles and accepted versions.                                                                                                        |
-| `settle(operator, transfer)`                                                   | operator                      | Deploys if needed, then settles. Fails with `InsufficientPayment`, without deploying, until `amount_in` has arrived.                |
-| `refund(transfer, operator: Option)`                                           | operator; anyone after expiry | Deploys if needed, then refunds. `operator` is `None` after expiry. Fails with `NothingToRefund`, without deploying, if unpaid.     |
+| Method                                                                         | Who                           | What it does                                                                                                                           |
+| ------------------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `__constructor(admin, operator: Option, implementation)`                       | once                          | Sets the admin, an optional first operator and the `kite` Wasm hash.                                                                   |
+| `predict_address(transfer)`                                                    | view                          | Validates the transfer and returns its deposit address. Fails for an implementation the factory never accepted.                        |
+| `admin()`, `is_operator(operator)`, `implementation()`, `is_implementation(h)` | view                          | Roles and accepted versions.                                                                                                           |
+| `settle(operator, transfer)`                                                   | operator                      | Deploys if needed, then settles. Fails with `InsufficientPayment`, without deploying, until `amount_in` has arrived.                   |
+| `refund(transfer, operator: Option)`                                           | operator; anyone after expiry | Deploys if needed, then refunds. `operator` is `None` after expiry. Fails with `NothingToRefund`, without deploying, if unpaid.        |
 | `recover(operator, transfer, token, destination: Option<MuxedAddress>)`        | operator                      | Deploys if needed, then sends all of `token` to `destination` or the refund address. Refused for the transfer's own tokens while open. |
-| `set_implementation(hash)`                                                     | admin                         | Accepts an uploaded `kite` and uses it for new transfers. Every version accepted before stays accepted.                             |
-| `grant_operator(operator)`, `revoke_operator(operator)`                        | admin                         | Manages operators.                                                                                                                  |
-| `set_admin(admin)`                                                             | admin                         | Hands over the factory.                                                                                                             |
-| `upgrade(wasm_hash)`                                                           | admin                         | Replaces the factory's code, keeping its address and storage.                                                                       |
+| `set_implementation(hash)`                                                     | admin                         | Accepts an uploaded `kite` and uses it for new transfers. Every version accepted before stays accepted.                                |
+| `grant_operator(operator)`, `revoke_operator(operator)`                        | admin                         | Manages operators.                                                                                                                     |
+| `set_admin(admin)`                                                             | admin                         | Hands over the factory.                                                                                                                |
+| `upgrade(wasm_hash)`                                                           | admin                         | Replaces the factory's code, keeping its address and storage.                                                                          |
 
 Operators pass their own address, which the factory checks with `require_auth` and its operator list. The customer never signs anything for `settle`, `refund` or `recover`.
 
@@ -101,17 +101,17 @@ The integration tests run Soroswap's factory, pair and router Wasm as deployed o
 
 Every event's topics are `["kite", <name>]`, and its data is a map:
 
-| Event                | Contract | Data                                                                         |
-| -------------------- | -------- | ---------------------------------------------------------------------------- |
-| `deployed`           | factory  | `transfer_id`, `address`, `implementation`                                   |
-| `settled`            | kite     | `transfer_id`, `amount_out`, `recipient`, `amount` (to the merchant)         |
-| `fee_paid`           | kite     | `transfer_id`, `index` (in `transfer.fees`), `recipient`, `amount`           |
-| `refunded`           | kite     | `transfer_id`, `token`, `refund_address`, `amount_refunded` (what was sent)  |
-| `excess_refunded`    | kite     | `transfer_id`, `token`, `to`, `amount` (only when it was sent)               |
-| `recovered`          | kite     | `transfer_id`, `token`, `to`, `amount`                                       |
-| `implementation_set` | factory  | `implementation`                                                             |
-| `operator_granted`   | factory  | `operator`                                                                   |
-| `operator_revoked`   | factory  | `operator`                                                                   |
+| Event                | Contract | Data                                                                        |
+| -------------------- | -------- | --------------------------------------------------------------------------- |
+| `deployed`           | factory  | `transfer_id`, `address`, `implementation`                                  |
+| `settled`            | kite     | `transfer_id`, `amount_out`, `recipient`, `amount` (to the merchant)        |
+| `fee_paid`           | kite     | `transfer_id`, `index` (in `transfer.fees`), `recipient`, `amount`          |
+| `refunded`           | kite     | `transfer_id`, `token`, `refund_address`, `amount_refunded` (what was sent) |
+| `excess_refunded`    | kite     | `transfer_id`, `token`, `to`, `amount` (only when it was sent)              |
+| `recovered`          | kite     | `transfer_id`, `token`, `to`, `amount`                                      |
+| `implementation_set` | factory  | `implementation`                                                            |
+| `operator_granted`   | factory  | `operator`                                                                  |
+| `operator_revoked`   | factory  | `operator`                                                                  |
 
 A deposit's events are published by the deposit contract, so their contract id is the pay-in address. The Kite server reads them from each transaction it sends.
 
@@ -144,24 +144,24 @@ soroban-sdk 29 only builds a contract Wasm through `stellar contract build`. The
 
 Everything in `sh_scripts/` runs from any directory and shares `_lib.sh`.
 
-| Variable             | Meaning                                                                                      |
-| -------------------- | -------------------------------------------------------------------------------------------- |
-| `STELLAR_NETWORK`    | `testnet`, the default and the only network the scripts send to.                             |
-| `STELLAR_ACCOUNT`    | The signer: a key name in the stellar CLI's keychain (`stellar keys`).                       |
-| `STELLAR_SECRET_KEY` | A secret key to sign with instead, read from the environment, never put on a command line.  |
-| `KITE_FACTORY`       | The factory, for `admin.sh` and `status.sh`. Defaults to the one in `deployments/`.          |
-| `YES=1`              | Skip the confirmation prompt.                                                                |
+| Variable             | Meaning                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `STELLAR_NETWORK`    | `testnet`, the default and the only network the scripts send to.                           |
+| `STELLAR_ACCOUNT`    | The signer: a key name in the stellar CLI's keychain (`stellar keys`).                     |
+| `STELLAR_SECRET_KEY` | A secret key to sign with instead, read from the environment, never put on a command line. |
+| `KITE_FACTORY`       | The factory, for `admin.sh` and `status.sh`. Defaults to the one in `deployments/`.        |
+| `YES=1`              | Skip the confirmation prompt.                                                              |
 
-| Script                                               | What it does                                                                                                   |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `setup.sh [--no-cli]`                                | Adds the `wasm32v1-none` target and installs the stellar CLI.                                                  |
-| `build.sh`                                           | Builds `kite` and `factory`, and prints each Wasm's size and hash.                                             |
-| `test.sh [unit\|integration\|all]`                   | Runs the tests. Anything after the suite goes to `cargo test`.                                                 |
-| `lint.sh [--fix]`                                    | `cargo fmt`, clippy with warnings as errors, and shellcheck if it's installed.                                 |
-| `upload-kite.sh`                                     | Uploads `kite` and prints its hash.                                                                            |
-| `ADMIN= OPERATOR= IMPLEMENTATION= deploy-factory.sh` | Deploys the factory.                                                                                           |
-| `admin.sh <command> <arg>`                           | `set-implementation`, `grant-operator`, `revoke-operator`, `set-admin`, `upgrade`.                             |
-| `status.sh [operator…]`                              | Reads the factory: admin, implementation, whether your build matches, whether each address is an operator.     |
+| Script                                               | What it does                                                                                               |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `setup.sh [--no-cli]`                                | Adds the `wasm32v1-none` target and installs the stellar CLI.                                              |
+| `build.sh`                                           | Builds `kite` and `factory`, and prints each Wasm's size and hash.                                         |
+| `test.sh [unit\|integration\|all]`                   | Runs the tests. Anything after the suite goes to `cargo test`.                                             |
+| `lint.sh [--fix]`                                    | `cargo fmt`, clippy with warnings as errors, and shellcheck if it's installed.                             |
+| `upload-kite.sh`                                     | Uploads `kite` and prints its hash.                                                                        |
+| `ADMIN= OPERATOR= IMPLEMENTATION= deploy-factory.sh` | Deploys the factory.                                                                                       |
+| `admin.sh <command> <arg>`                           | `set-implementation`, `grant-operator`, `revoke-operator`, `set-admin`, `upgrade`.                         |
+| `status.sh [operator…]`                              | Reads the factory: admin, implementation, whether your build matches, whether each address is an operator. |
 
 The scripts that send record what they did in `deployments/stellar-testnet.json`. `status.sh` sends nothing.
 
